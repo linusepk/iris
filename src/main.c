@@ -7,33 +7,14 @@
 #include "iris.h"
 #include "batch_renderer.h"
 
-#define ENTITY_MAX 512
-
-typedef enum {
-    ENTITY_FLAG_RENDERABLE = 1 << 0,
-} entity_flag_t;
-
-typedef struct entity_t entity_t;
-struct entity_t {
-    entity_flag_t flags;
-    b8_t alive;
-
-    re_vec2_t position;
-    re_vec2_t size;
-
-    struct {
-        re_vec4_t color;
-    } renderer;
-};
+#include <dlfcn.h>
 
 typedef struct state_t state_t;
 struct state_t {
     GLFWwindow *window;
     batch_renderer_t *br;
 
-    entity_t ents[ENTITY_MAX];
-
-    f32_t dt;
+    iris_state_t iris;
 };
 
 void state_init(state_t *state) {
@@ -68,25 +49,6 @@ void state_terminate(state_t *state) {
     *state = (state_t) {0};
 }
 
-entity_t *entity_new(state_t *state) {
-    for (u32_t i = 0; i < ENTITY_MAX; i++) {
-        if (!state->ents[i].alive) {
-            state->ents[i] = (entity_t) {
-                .alive = true,
-                .size = re_vec2s(1.0f),
-            };
-            return &state->ents[i];
-        }
-    }
-
-    return NULL;
-}
-
-void entity_destroy(entity_t **ent) {
-    (*ent)->alive = false;
-    *ent = NULL;
-}
-
 static void render(state_t *state) {
     glClearColor(0.1f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -98,17 +60,17 @@ static void render(state_t *state) {
     batch_begin(state->br);
 
     for (u32_t i = 0; i < ENTITY_MAX; i++) {
-        if (!state->ents[i].alive || (state->ents[i].flags & ENTITY_FLAG_RENDERABLE) == 0) {
+        if (!state->iris.ents[i].alive || (state->iris.ents[i].flags & ENTITY_FLAG_RENDERABLE) == 0) {
             continue;
         }
 
         batch_draw(
                 state->br,
                 re_vec2s(0.0f),
-                state->ents[i].position,
+                state->iris.ents[i].position,
                 0.0f,
-                state->ents[i].size,
-                state->ents[i].renderer.color,
+                state->iris.ents[i].size,
+                state->iris.ents[i].renderer.color,
                 NULL);
 
 
@@ -118,7 +80,7 @@ static void render(state_t *state) {
     batch_flush(state->br);
 }
 
-static void calculate_delta_time(state_t *state) {
+static void calculate_delta_time(iris_state_t *state) {
     static f32_t curr = 0.0f, last = 0.0f;
     if (last == 0.0f) {
         last = re_os_get_time();
@@ -135,16 +97,16 @@ i32_t main(i32_t argc, char **argv) {
     state_t state = {0};
     state_init(&state);
 
-    entity_t *ent = entity_new(&state);
+    entity_t *ent = entity_new(&state.iris);
     ent->flags |= ENTITY_FLAG_RENDERABLE;
     ent->renderer.color = re_vec4s(1.0f);
 
     f32_t timer = 0.0f;
     u32_t fps = 0;
     while (!glfwWindowShouldClose(state.window)) {
-        calculate_delta_time(&state);
+        calculate_delta_time(&state.iris);
 
-        timer += state.dt;
+        timer += state.iris.dt;
         if (timer >= 1.0f) {
             re_log_info("FPS: %u", fps);
             timer = 0.0f;
@@ -153,11 +115,11 @@ i32_t main(i32_t argc, char **argv) {
         fps++;
 
         render(&state);
-        ent->position.x += state.dt * 2.0f;
+        ent->position.x += state.iris.dt * 2.0f;
 
         if (ent->position.x >= 4.0f) {
             entity_destroy(&ent);
-            ent = entity_new(&state);
+            ent = entity_new(&state.iris);
             ent->flags |= ENTITY_FLAG_RENDERABLE;
             ent->renderer.color = re_vec4_hex1(0xe74c3cff);
         }

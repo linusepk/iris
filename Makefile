@@ -1,7 +1,7 @@
 CC := gcc
 CFLAGS := -std=c99 -ggdb
 IFLAGS := -Iinclude/ -Isrc/ -Ilibs/rebound/ -Ilibs/glad/include/
-LFLAGS := -lm libs/rebound/rebound.o -lglfw libs/glad/glad.o
+LFLAGS := -lm libs/rebound/rebound.o -lglfw libs/glad/glad.o -Lbin/ -l:modules/core.imod
 
 SRC := $(wildcard src/*.c)
 MODULES := $(subst .c,.imod,$(addprefix bin/,$(wildcard modules/*.c)))
