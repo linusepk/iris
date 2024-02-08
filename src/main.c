@@ -17,6 +17,54 @@ struct state_t {
     iris_state_t iris;
 };
 
+typedef struct input_t input_t;
+struct input_t {
+    struct {
+        b8_t new;
+        b8_t pressed;
+    } keyboard[GLFW_KEY_LAST];
+};
+static input_t _input = {0};
+
+// This should be called before polling for input
+// because if it's called after the new flag
+// will always be false thus never letting
+// 'key_down()' return true.
+static void input_reset(void) {
+    for (u32_t i = 0; i < GLFW_KEY_LAST; i++) {
+        _input.keyboard[i].new = false;
+    }
+}
+
+b8_t key_down(u32_t key) {
+    return _input.keyboard[key].pressed && _input.keyboard[key].new;
+}
+b8_t key_press(u32_t key) {
+    return _input.keyboard[key].pressed;
+}
+b8_t key_up(u32_t key) {
+    return !_input.keyboard[key].pressed && _input.keyboard[key].new;
+}
+
+static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    (void) window;
+
+    switch (action) {
+        case GLFW_PRESS:
+            _input.keyboard[key].new = true;
+            _input.keyboard[key].pressed = true;
+            break;
+
+        case GLFW_RELEASE:
+            _input.keyboard[key].new = true;
+            _input.keyboard[key].pressed = false;
+            break;
+
+        default:
+            break;
+    }
+}
+
 void state_init(state_t *state) {
     if (!glfwInit()) {
         re_log_error("Failed to load GLFW.");
@@ -33,6 +81,8 @@ void state_init(state_t *state) {
     }
     glfwMakeContextCurrent(state->window);
     glfwSwapInterval(0);
+
+    glfwSetKeyCallback(state->window, key_callback);
 
     if (!gladLoadGL(glfwGetProcAddress)) {
         re_log_error("Failed to load GL functions through GLAD.");
@@ -97,9 +147,9 @@ i32_t main(i32_t argc, char **argv) {
     state_t state = {0};
     state_init(&state);
 
-    entity_t *ent = entity_new(&state.iris);
-    ent->flags |= ENTITY_FLAG_RENDERABLE;
-    ent->renderer.color = re_vec4s(1.0f);
+    entity_t *player = entity_new(&state.iris);
+    player->flags |= ENTITY_FLAG_RENDERABLE;
+    player->renderer.color = re_vec4s(1.0f);
 
     f32_t timer = 0.0f;
     u32_t fps = 0;
@@ -114,16 +164,26 @@ i32_t main(i32_t argc, char **argv) {
         }
         fps++;
 
-        render(&state);
-        ent->position.x += state.iris.dt * 2.0f;
-
-        if (ent->position.x >= 4.0f) {
-            entity_destroy(&ent);
-            ent = entity_new(&state.iris);
-            ent->flags |= ENTITY_FLAG_RENDERABLE;
-            ent->renderer.color = re_vec4_hex1(0xe74c3cff);
+        if (key_down(GLFW_KEY_R)) {
+            entity_destroy(&player);
+            player = entity_new(&state.iris);
+            player->flags |= ENTITY_FLAG_RENDERABLE;
+            player->renderer.color = re_vec4_hex1(0xe67e22ff);
         }
 
+        const f32_t speed = 10.0f;
+
+        re_vec2_t vel = {0};
+        vel.x = key_press(GLFW_KEY_D) - key_press(GLFW_KEY_A);
+        vel.y = key_press(GLFW_KEY_W) - key_press(GLFW_KEY_S);
+        vel = re_vec2_normalize(vel);
+        vel = re_vec2_muls(vel, speed * state.iris.dt);
+
+        player->position = re_vec2_add(player->position, vel);
+
+        render(&state);
+
+        input_reset();
         glfwSwapBuffers(state.window);
         glfwPollEvents();
     }
