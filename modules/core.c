@@ -28,3 +28,19 @@ void entity_destroy(entity_t **ent) {
     (*ent)->alive = false;
     *ent = NULL;
 }
+
+/*=========================*/
+// Input
+/*=========================*/
+
+input_t _iris_input = {0};
+
+b8_t key_down(ikey_t key) {
+    return _iris_input.keyboard[key].pressed && _iris_input.keyboard[key].new;
+}
+b8_t key_press(ikey_t key) {
+    return _iris_input.keyboard[key].pressed;
+}
+b8_t key_up(ikey_t key) {
+    return !_iris_input.keyboard[key].pressed && _iris_input.keyboard[key].new;
+}

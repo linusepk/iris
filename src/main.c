@@ -1,30 +1,9 @@
 #include <rebound.h>
 
-#define GLFW_INCLUDE_NONE
-#include <GLFW/glfw3.h>
-#include <glad/gl.h>
-
 #include "iris.h"
-#include "batch_renderer.h"
+#include "internal.h"
 
-#include <dlfcn.h>
-
-typedef struct state_t state_t;
-struct state_t {
-    GLFWwindow *window;
-    batch_renderer_t *br;
-
-    iris_state_t iris;
-};
-
-typedef struct input_t input_t;
-struct input_t {
-    struct {
-        b8_t new;
-        b8_t pressed;
-    } keyboard[GLFW_KEY_LAST];
-};
-static input_t _input = {0};
+#include <glad/gl.h>
 
 // This should be called before polling for input
 // because if it's called after the new flag
@@ -32,18 +11,8 @@ static input_t _input = {0};
 // 'key_down()' return true.
 static void input_reset(void) {
     for (u32_t i = 0; i < GLFW_KEY_LAST; i++) {
-        _input.keyboard[i].new = false;
+        _iris_input.keyboard[i].new = false;
     }
-}
-
-b8_t key_down(u32_t key) {
-    return _input.keyboard[key].pressed && _input.keyboard[key].new;
-}
-b8_t key_press(u32_t key) {
-    return _input.keyboard[key].pressed;
-}
-b8_t key_up(u32_t key) {
-    return !_input.keyboard[key].pressed && _input.keyboard[key].new;
 }
 
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
@@ -51,13 +20,13 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 
     switch (action) {
         case GLFW_PRESS:
-            _input.keyboard[key].new = true;
-            _input.keyboard[key].pressed = true;
+            _iris_input.keyboard[key].new = true;
+            _iris_input.keyboard[key].pressed = true;
             break;
 
         case GLFW_RELEASE:
-            _input.keyboard[key].new = true;
-            _input.keyboard[key].pressed = false;
+            _iris_input.keyboard[key].new = true;
+            _iris_input.keyboard[key].pressed = false;
             break;
 
         default:
@@ -164,7 +133,7 @@ i32_t main(i32_t argc, char **argv) {
         }
         fps++;
 
-        if (key_down(GLFW_KEY_R)) {
+        if (key_down(KEY_R)) {
             entity_destroy(&player);
             player = entity_new(&state.iris);
             player->flags |= ENTITY_FLAG_RENDERABLE;
@@ -174,8 +143,8 @@ i32_t main(i32_t argc, char **argv) {
         const f32_t speed = 10.0f;
 
         re_vec2_t vel = {0};
-        vel.x = key_press(GLFW_KEY_D) - key_press(GLFW_KEY_A);
-        vel.y = key_press(GLFW_KEY_W) - key_press(GLFW_KEY_S);
+        vel.x = key_press(KEY_D) - key_press(KEY_A);
+        vel.y = key_press(KEY_W) - key_press(KEY_S);
         vel = re_vec2_normalize(vel);
         vel = re_vec2_muls(vel, speed * state.iris.dt);
 

@@ -2,6 +2,7 @@ CC := gcc
 CFLAGS := -std=c99 -ggdb
 IFLAGS := -Iinclude/ -Isrc/ -Ilibs/rebound/ -Ilibs/glad/include/
 LFLAGS := -lm libs/rebound/rebound.o -lglfw libs/glad/glad.o -Lbin/ -l:modules/core.imod
+MODLFLAGS := -lm libs/rebound/rebound.o
 
 SRC := $(wildcard src/*.c)
 MODULES := $(subst .c,.imod,$(addprefix bin/,$(wildcard modules/*.c)))
@@ -9,7 +10,7 @@ MODULES := $(subst .c,.imod,$(addprefix bin/,$(wildcard modules/*.c)))
 iris: libs mods
 	@mkdir -p bin/
 	cp -r resources bin/
-	$(CC) $(CFLAGS) $(SRC) -o bin/iris $(IFLAGS) $(LFLAGS)
+	$(CC) $(CFLAGS) -fPIC $(SRC) -o bin/iris $(IFLAGS) $(LFLAGS)
 
 libs: libs/rebound/rebound.o
 
@@ -23,4 +24,4 @@ mods: $(MODULES)
 
 bin/modules/%.imod: modules/%.c
 	@mkdir -p bin/modules/
-	$(CC) $(CFLAGS) -shared $< -o $@ $(IFLAGS) $(LFLAGS)
+	$(CC) $(CFLAGS) -fPIC -shared $< -o $@ $(IFLAGS) $(MODLFLAGS)
