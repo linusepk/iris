@@ -2,6 +2,12 @@
 
 #include <rebound.h>
 
+typedef struct iris_state_t iris_state_t;
+
+typedef struct imod_state_t imod_state_t;
+struct imod_state_t {
+};
+
 typedef struct imod_desc_t imod_desc_t;
 struct imod_desc_t {
     const char *name;
@@ -10,9 +16,7 @@ struct imod_desc_t {
 // Module entry point.
 // This will be called for every module loaded.
 // If the entry point is not found, an error is printed and module is discarded.
-typedef imod_desc_t (*imod_entry_func_t)(void);
-
-typedef struct iris_state_t iris_state_t;
+typedef imod_desc_t (*imod_init_func_t)(void);
 
 /*=========================*/
 // Entity system
@@ -176,6 +180,10 @@ typedef enum {
     KEY_LAST = KEY_MENU,
 } ikey_t;
 
+extern b8_t key_down(u32_t key);
+extern b8_t key_press(ikey_t key);
+extern b8_t key_up(ikey_t key);
+
 typedef struct input_t input_t;
 struct input_t {
     struct {
@@ -184,7 +192,3 @@ struct input_t {
     } keyboard[KEY_LAST];
 };
 extern input_t _iris_input;
-
-extern b8_t key_down(u32_t key);
-extern b8_t key_press(ikey_t key);
-extern b8_t key_up(ikey_t key);

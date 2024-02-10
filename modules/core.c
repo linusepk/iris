@@ -1,10 +1,14 @@
 #include <iris.h>
 
-imod_desc_t iris_module_entry(void) {
+imod_desc_t init(iris_state_t *state) {
     return (imod_desc_t) {
         .name = "Core"
     };
 }
+
+void terminate(iris_state_t *state) {}
+void update(iris_state_t *state) {}
+void fixed_update(iris_state_t *state) {}
 
 /*=========================*/
 // Entity system

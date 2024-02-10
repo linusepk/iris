@@ -34,7 +34,17 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
     }
 }
 
-void state_init(state_t *state) {
+void state_init(state_t *state, const char *argv0) {
+    state->arena = re_arena_create(GB(4));
+
+    state->root_dir = re_str_cstr(argv0);
+    for (u32_t i = state->root_dir.len - 1; i > 0; i--) {
+        if (state->root_dir.str[i] == '/') {
+            state->root_dir = re_str_prefix(state->root_dir, i + 1);
+            break;
+        }
+    }
+
     if (!glfwInit()) {
         re_log_error("Failed to load GLFW.");
     }
@@ -114,7 +124,10 @@ i32_t main(i32_t argc, char **argv) {
     re_init();
 
     state_t state = {0};
-    state_init(&state);
+    state_init(&state, argv[0]);
+
+    modules_load(&state);
+    modules_init(&state);
 
     entity_t *player = entity_new(&state.iris);
     player->flags |= ENTITY_FLAG_RENDERABLE;
@@ -152,11 +165,16 @@ i32_t main(i32_t argc, char **argv) {
 
         render(&state);
 
+        modules_update(&state);
+
         input_reset();
         glfwSwapBuffers(state.window);
         glfwPollEvents();
     }
 
+    modules_terminate(&state);
+
+    modules_unload(&state);
     state_terminate(&state);
 
     re_terminate();
