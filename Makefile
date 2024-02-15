@@ -25,3 +25,7 @@ mods: $(MODULES)
 bin/modules/%.imod: modules/%.c
 	@mkdir -p bin/modules/
 	$(CC) $(CFLAGS) -fPIC -shared $< -o $@ $(IFLAGS) $(MODLFLAGS)
+
+.PHONY: clean
+clean:
+	rm -r bin/modules bin/iris

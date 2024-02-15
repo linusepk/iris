@@ -23,6 +23,8 @@ void update(iris_state_t *state) {
             entity_destroy(&ent);
         }
     }
+
+    iris_debug_draw_quad(state, re_vec2s(0.0f), re_vec2s(0.75f), 22.5f, re_vec4s(0.0f));
 }
 
 void fixed_update(iris_state_t *state) {}

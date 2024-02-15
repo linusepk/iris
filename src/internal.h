@@ -23,7 +23,10 @@ struct module_t {
 
 typedef struct state_t state_t;
 struct state_t {
-    re_arena_t *arena;
+    re_arena_t *permanent_arena;
+
+    re_arena_t *frame_arenas[2];
+    u32_t frame_arena_current;
 
     re_str_t root_dir;
 

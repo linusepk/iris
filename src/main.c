@@ -1,5 +1,6 @@
 #include <rebound.h>
 
+#include "batch_renderer.h"
 #include "iris.h"
 #include "internal.h"
 
@@ -35,7 +36,15 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 }
 
 void state_init(state_t *state, const char *argv0) {
-    state->arena = re_arena_create(GB(4));
+    state->permanent_arena = re_arena_create(GB(4));
+
+    for (u32_t i = 0; i < re_arr_len(state->frame_arenas); i++) {
+        state->frame_arenas[i] = re_arena_create(GB(4));
+    }
+    state->frame_arena_current = 0;
+
+    state->iris.permanent_arena = state->permanent_arena;
+    state->iris.frame_arena = state->frame_arenas[0];
 
     state->root_dir = re_str_cstr(argv0);
     for (u32_t i = state->root_dir.len - 1; i > 0; i--) {
@@ -78,7 +87,7 @@ void state_terminate(state_t *state) {
     *state = (state_t) {0};
 }
 
-static void render(state_t *state) {
+static void render_entities(state_t *state) {
     glClearColor(0.1f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
@@ -86,10 +95,8 @@ static void render(state_t *state) {
     glfwGetWindowSize(state->window, &window_size.x, &window_size.y);
     batch_update(state->br, window_size, 16.0f);
 
-    batch_begin(state->br);
-
     for (u32_t i = 0; i < ENTITY_MAX; i++) {
-        if (!state->iris.ents[i].alive || (state->iris.ents[i].flags & ENTITY_FLAG_RENDERABLE) == 0) {
+        if (!state->iris.ents[i].alive || !(state->iris.ents[i].flags & ENTITY_FLAG_RENDERABLE)) {
             continue;
         }
 
@@ -101,12 +108,7 @@ static void render(state_t *state) {
                 state->iris.ents[i].size,
                 state->iris.ents[i].renderer.color,
                 NULL);
-
-
     }
-
-    batch_end(state->br);
-    batch_flush(state->br);
 }
 
 static void calculate_delta_time(iris_state_t *state) {
@@ -120,6 +122,29 @@ static void calculate_delta_time(iris_state_t *state) {
     last = curr;
 }
 
+static void swap_frame_arena(state_t *state) {
+    state->frame_arena_current = (state->frame_arena_current + 1) % re_arr_len(state->frame_arenas);
+    re_arena_clear(state->frame_arenas[state->frame_arena_current]);
+    state->iris.frame_arena = state->frame_arenas[state->frame_arena_current];
+}
+
+static void iris_reset_state(iris_state_t *state) {
+    state->_debug_draw_calls = NULL;
+}
+
+static void process_debug_draw_calls(state_t *state) {
+    for (iris_debug_draw_call_t *curr = state->iris._debug_draw_calls; curr != NULL; curr = curr->next) {
+        batch_draw(
+                state->br,
+                re_vec2s(0.0f),
+                curr->pos,
+                curr->rotation,
+                curr->size,
+                curr->color,
+                NULL);
+    }
+}
+
 i32_t main(i32_t argc, char **argv) {
     re_init();
 
@@ -129,9 +154,9 @@ i32_t main(i32_t argc, char **argv) {
     modules_load(&state);
     modules_init(&state);
 
-    entity_t *player = entity_new(&state.iris);
-    player->flags |= ENTITY_FLAG_RENDERABLE;
-    player->renderer.color = re_vec4s(1.0f);
+    state.iris.player = entity_new(&state.iris);
+    state.iris.player->flags |= ENTITY_FLAG_RENDERABLE;
+    state.iris.player->renderer.color = re_vec4s(1.0f);
 
     f32_t timer = 0.0f;
     u32_t fps = 0;
@@ -146,30 +171,25 @@ i32_t main(i32_t argc, char **argv) {
         }
         fps++;
 
-        if (key_down(KEY_R)) {
-            entity_destroy(&player);
-            player = entity_new(&state.iris);
-            player->flags |= ENTITY_FLAG_RENDERABLE;
-            player->renderer.color = re_vec4_hex1(0xe67e22ff);
-        }
-
-        const f32_t speed = 10.0f;
-
-        re_vec2_t vel = {0};
-        vel.x = key_press(KEY_D) - key_press(KEY_A);
-        vel.y = key_press(KEY_W) - key_press(KEY_S);
-        vel = re_vec2_normalize(vel);
-        vel = re_vec2_muls(vel, speed * state.iris.dt);
-
-        player->position = re_vec2_add(player->position, vel);
-
-        render(&state);
-
         modules_update(&state);
+
+        // Rendering
+        batch_begin(state.br);
+
+        render_entities(&state);
+        process_debug_draw_calls(&state);
+
+        batch_end(state.br);
+        batch_flush(state.br);
+
+
 
         input_reset();
         glfwSwapBuffers(state.window);
         glfwPollEvents();
+
+        iris_reset_state(&state.iris);
+        swap_frame_arena(&state);
     }
 
     modules_terminate(&state);

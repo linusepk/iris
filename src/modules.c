@@ -80,7 +80,7 @@ void modules_load(state_t *state) {
 
         module_t module = module_load(d->d_name);
 
-        module_t *ptr = re_arena_push(state->arena, sizeof(module_t));
+        module_t *ptr = re_arena_push(state->permanent_arena, sizeof(module_t));
         *ptr = module;
         ptr->next = state->module;
         state->module = ptr;

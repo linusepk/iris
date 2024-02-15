@@ -1,6 +1,7 @@
 #pragma once
 
 #include <rebound.h>
+#include <threads.h>
 
 typedef struct iris_state_t iris_state_t;
 
@@ -43,11 +44,6 @@ struct entity_t {
 
 extern entity_t *entity_new(iris_state_t *state);
 extern void entity_destroy(entity_t **ent);
-
-struct iris_state_t {
-    entity_t ents[ENTITY_MAX];
-    f32_t dt;
-};
 
 /*=========================*/
 // Input
@@ -192,3 +188,39 @@ struct input_t {
     } keyboard[KEY_LAST];
 };
 extern input_t _iris_input;
+
+/*=========================*/
+// Debugging
+/*=========================*/
+
+typedef struct iris_debug_draw_call_t iris_debug_draw_call_t;
+struct iris_debug_draw_call_t {
+    iris_debug_draw_call_t *next;
+    iris_debug_draw_call_t *last;
+
+    re_vec2_t pos;
+    re_vec2_t size;
+    f32_t rotation;
+    re_vec4_t color;
+};
+
+extern void iris_debug_draw_line_points(iris_state_t *state, re_vec2_t a, re_vec2_t b, re_vec4_t color);
+extern void iris_debug_draw_line_length(iris_state_t *state, re_vec2_t pos, f32_t length, f32_t angle, re_vec4_t color);
+extern void iris_debug_draw_quad(iris_state_t *state, re_vec2_t pos, re_vec2_t size, f32_t rotation, re_vec4_t color);
+extern void iris_debug_draw_quad_wireframe(iris_state_t *state, re_vec2_t pos, re_vec2_t size, f32_t rotation, re_vec4_t color);
+
+/*=========================*/
+// State
+/*=========================*/
+
+struct iris_state_t {
+    re_arena_t *permanent_arena;
+    re_arena_t *frame_arena;
+
+    entity_t ents[ENTITY_MAX];
+    entity_t *player;
+
+    f32_t dt;
+
+    iris_debug_draw_call_t *_debug_draw_calls;
+};
