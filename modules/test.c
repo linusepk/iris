@@ -18,7 +18,7 @@ void update(iris_state_t *state) {
         if (ent == NULL) {
             ent = entity_new(state);
             ent->flags |= ENTITY_FLAG_RENDERABLE;
-            ent->renderer.color = re_vec4_hex1(0x212121ff);
+            ent->renderer.color = re_vec4_hex1(0xa89984ff);
             ent->position.x = 1;
             ent->position.y = 3;
         } else {

@@ -156,8 +156,8 @@ i32_t main(i32_t argc, char **argv) {
     modules_init(&state);
 
     state.iris.player = entity_new(&state.iris);
-    // state.iris.player->flags |= ENTITY_FLAG_RENDERABLE;
-    // state.iris.player->renderer.color = re_vec4s(1.0f);
+    state.iris.player->flags |= ENTITY_FLAG_RENDERABLE;
+    state.iris.player->renderer.color = re_vec4_hex1(0xebdbb2ff);
 
     f32_t timer = 0.0f;
     u32_t fps = 0;
