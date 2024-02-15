@@ -88,7 +88,8 @@ void state_terminate(state_t *state) {
 }
 
 static void render_entities(state_t *state) {
-    glClearColor(0.1f, 0.3f, 0.3f, 1.0f);
+    const re_vec4_t color = re_vec4_hex1(0x212121ff);
+    glClearColor(color.x, color.y, color.z, color.a);
     glClear(GL_COLOR_BUFFER_BIT);
 
     re_ivec2_t window_size;
@@ -136,7 +137,7 @@ static void process_debug_draw_calls(state_t *state) {
     for (iris_debug_draw_call_t *curr = state->iris._debug_draw_calls; curr != NULL; curr = curr->next) {
         batch_draw(
                 state->br,
-                re_vec2s(0.0f),
+                curr->origin,
                 curr->pos,
                 curr->rotation,
                 curr->size,
@@ -155,8 +156,8 @@ i32_t main(i32_t argc, char **argv) {
     modules_init(&state);
 
     state.iris.player = entity_new(&state.iris);
-    state.iris.player->flags |= ENTITY_FLAG_RENDERABLE;
-    state.iris.player->renderer.color = re_vec4s(1.0f);
+    // state.iris.player->flags |= ENTITY_FLAG_RENDERABLE;
+    // state.iris.player->renderer.color = re_vec4s(1.0f);
 
     f32_t timer = 0.0f;
     u32_t fps = 0;

@@ -198,6 +198,7 @@ struct iris_debug_draw_call_t {
     iris_debug_draw_call_t *next;
     iris_debug_draw_call_t *last;
 
+    re_vec2_t origin;
     re_vec2_t pos;
     re_vec2_t size;
     f32_t rotation;
